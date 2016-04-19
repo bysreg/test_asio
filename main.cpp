@@ -64,12 +64,48 @@ void timer_nonblocking_multiple_argument_callback_example()
 	io.run();
 }
 
+class Callback
+{
+	public:
+	boost::asio::io_service io;
+	boost::asio::deadline_timer timer_;
+	int count_;
+
+	void callback()
+	{
+		if(count_ < 5)
+		{
+			cout << count_ << endl;
+			++count_;
+
+			timer_.expires_at(timer_.expires_at() + boost::posix_time::seconds(1));
+			timer_.async_wait(boost::bind(&Callback::callback, this));
+		}
+	}
+
+	Callback(boost::asio::io_service& io) : 
+		timer_(io, boost::posix_time::seconds(1)), 
+		count_(0)
+	{
+		timer_.async_wait(boost::bind(&Callback::callback, this));
+	}
+};
+
+void timer_nonblocking_class_example()
+{
+	boost::asio::io_service io;
+	Callback c(io);
+	
+	io.run();
+}
+
 int main()
 {
 	//lambda_example();
 	//timer_blocking_example();
 	//timer_nonblocking_example();
-	timer_nonblocking_multiple_argument_callback_example();
+	//timer_nonblocking_multiple_argument_callback_example();
+	timer_nonblocking_class_example();
 	return 0;
 }
 
