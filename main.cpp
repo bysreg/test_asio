@@ -6,6 +6,7 @@
 #include <boost/asio.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/bind.hpp>
+#include <boost/thread/thread.hpp>
 
 using namespace std;
 
@@ -99,13 +100,67 @@ void timer_nonblocking_class_example()
 	io.run();
 }
 
+class CallbackMultipleTimer
+{
+	public:
+	boost::asio::strand strand_;
+	int count_;
+	boost::asio::deadline_timer timer1_;
+	boost::asio::deadline_timer timer2_;
+
+	void callback1()
+	{
+		if (count_ < 10)
+   		{
+      		std::cout << "Timer 1: " << count_ << std::endl;
+			++count_;
+
+      		timer1_.expires_at(timer1_.expires_at() + boost::posix_time::seconds(1));
+      		timer1_.async_wait(strand_.wrap(boost::bind(&CallbackMultipleTimer::callback1, this)));
+   		 }
+	}
+
+	void callback2()
+	{
+		if (count_ < 10)
+    	{
+      		std::cout << "Timer 2: " << count_ << std::endl;
+      		++count_;
+
+      		timer2_.expires_at(timer2_.expires_at() + boost::posix_time::seconds(1));
+      		timer2_.async_wait(strand_.wrap(boost::bind(&CallbackMultipleTimer::callback2, this)));
+   		 }
+	}
+
+	CallbackMultipleTimer(boost::asio::io_service& io)
+		: strand_(io),
+		  timer1_(io, boost::posix_time::seconds(1)),
+	 	  timer2_(io, boost::posix_time::seconds(1)),
+		  count_(0)
+	{
+		timer1_.async_wait(strand_.wrap(boost::bind(&CallbackMultipleTimer::callback1, this)));
+		timer2_.async_wait(strand_.wrap(boost::bind(&CallbackMultipleTimer::callback2, this)));
+	}
+
+};
+
+void timer_nonblocking_multiple_timer_example()
+{
+	boost::asio::io_service io;
+	CallbackMultipleTimer cb(io);
+	boost::thread t(boost::bind(&boost::asio::io_service::run, &io));
+	io.run();
+	t.join();
+}
+
 int main()
 {
 	//lambda_example();
 	//timer_blocking_example();
 	//timer_nonblocking_example();
 	//timer_nonblocking_multiple_argument_callback_example();
-	timer_nonblocking_class_example();
+	//timer_nonblocking_class_example();
+	timer_nonblocking_multiple_timer_example();
 	return 0;
 }
 
