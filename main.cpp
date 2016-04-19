@@ -26,10 +26,27 @@ void timer_blocking_example()
 	cout<<"hello world"<<endl;
 }
 
+void callback(const boost::system::error_code&)
+{
+	cout<<"hello world"<<endl;
+}
+
+void timer_nonblocking_example()
+{
+	boost::asio::io_service io;
+	boost::asio::deadline_timer t(io, boost::posix_time::seconds(5));
+	t.async_wait(&callback);
+
+	io.run(); // need this call for non blocking
+}
+
+
+
 int main()
 {
 	//lambda_example();
-	timer_blocking_example();	
-	
+	//timer_blocking_example();	
+	timer_nonblocking_example();
 	return 0;
 }
+
